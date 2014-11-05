@@ -8,7 +8,7 @@ import java.util.Random;
 //TODO change lib name...
 public class Attendance {
     public static String hash;
-    public static Integer notice;
+    public static Integer nonce;
     public static Long timestamp;
     public static Long lectureId;
     public Attendance(){
@@ -16,7 +16,7 @@ public class Attendance {
     }
     public Integer getNotice(){
         Random random = new Random();
-        notice = random.nextInt(10000000);
-        return notice;
+        nonce = random.nextInt(10000000);
+        return nonce;
     }
 }

@@ -13,7 +13,7 @@
             android:layout_height="fill_parent"
             android:layout_alignParentRight="true"
             android:hint="65000"
-            android:text="80"/>
+            android:text="3000"/>
         <TextView
             android:id="@+id/sep"
             android:layout_width="wrap_content"
@@ -40,7 +40,7 @@
             android:layout_width="80dp"
             android:layout_height="50dp"
             android:background="@drawable/corner"
-            android:text="send\nNotice"/>
+            android:text="SEND\nNONCE"/>
         <TextView
             android:id="@+id/first_text"
             android:layout_width="fill_parent"
@@ -48,8 +48,7 @@
             android:layout_height="wrap_content"
             android:layout_toRightOf="@id/first"
             android:padding="8dp"
-            android:gravity="center_vertical"
-            android:text="1244012"/>
+            android:gravity="center_vertical" />
     </RelativeLayout>
 
     <TextView
@@ -69,7 +68,7 @@
             android:layout_width="80dp"
             android:layout_height="50dp"
             android:background="@drawable/corner"
-            android:text="send\nHash"/>
+            android:text="SEND\nHASH"/>
         <TextView
             android:id="@+id/second_text"
             android:layout_width="fill_parent"
@@ -77,8 +76,7 @@
             android:layout_height="wrap_content"
             android:layout_toRightOf="@id/second"
             android:padding="8dp"
-            android:gravity="center_vertical"
-            android:text="1244012"/>
+            android:gravity="center_vertical" />
     </RelativeLayout>
 
     <TextView

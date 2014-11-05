@@ -2,7 +2,6 @@ package info.nukoneko.sockettest;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.util.Base64;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -17,7 +16,6 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
@@ -28,7 +26,6 @@ import attendance4j.JsonValidator;
 import attendance4j.conf.Async;
 import attendance4j.conf.AsyncCallback;
 import attendance4j.conf.ConnectRun;
-import attendance4j.conf.ConnectUtil;
 import attendance4j.conf.ConnectUtil.method;
 import attendance4j.conf.ConnectUtil.Protocol;
 
@@ -51,7 +48,7 @@ public class AuthenticationActivity extends Activity {
         findViewById(R.id.first).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ((TextView)findViewById(R.id.first_text)).setText("notice:" + String.valueOf(Attendance.notice));
+                ((TextView)findViewById(R.id.first_text)).setText("nonce:" + String.valueOf(Attendance.nonce));
                 sendFirst();
             }
         });
@@ -77,7 +74,7 @@ public class AuthenticationActivity extends Activity {
         }
         private String generateHash() {
             try {
-                String key = String.valueOf(Attendance.notice + this.timeStamp + this.lecture);
+                String key = String.valueOf(Attendance.nonce + this.timeStamp + this.lecture);
                 SecretKey sk = new SecretKeySpec(key.getBytes(), "HmacSHA1");
                 Mac mac = Mac.getInstance("HmacSHA1");
                 mac.init(sk);
@@ -97,8 +94,8 @@ public class AuthenticationActivity extends Activity {
             @Override
             public String doFunc(Object... params) {
                 Map<String, Object> map = new HashMap<String, Object>();
-                map.put("notice", Attendance.notice);
-                return ConnectRun.send(method.GET, Protocol.HTTP, serverIP + ":3000/auth/first", map);
+                map.put("nonce", Attendance.nonce);
+                return ConnectRun.send(method.GET, Protocol.HTTP, createBaseUri("auth/first"), map);
             }
 
             @Override
@@ -125,13 +122,31 @@ public class AuthenticationActivity extends Activity {
         }).run();
     }
 
+    public String createBaseUri(String endPoint){
+        String host = ((EditText)findViewById(R.id.ip)).getText().toString();
+        String port = ((EditText)findViewById(R.id.port)).getText().toString();
+        if(port.equals(""))port = "80";
+        String base = "";
+        if(host.indexOf("/") > 0){
+            String[] _p = host.split("/");
+            String _ = "";
+            for (int i = 1; i < _p.length; i++){
+                _ += _p[i] + "/";
+            }
+            base = _p[0] + ":" + port + "/" + _;
+        }else{
+            base = host + ":" + port;
+        }
+        return base + "/" + endPoint;
+    }
+
     public void sendSecond(){
         new Async<String>(new AsyncCallback<String>() {
             @Override
             public String doFunc(Object... params) {
                 Map<String, Object> map = new HashMap<String, Object>();
                 map.put("hash", firstResult.hash);
-                return ConnectRun.send(method.GET, Protocol.HTTP, serverIP + ":3000/auth/second", map);
+                return ConnectRun.send(method.GET, Protocol.HTTP, createBaseUri("auth/second"), map);
             }
 
             @Override
