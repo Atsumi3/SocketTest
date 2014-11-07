@@ -45,18 +45,10 @@ public class AuthenticationActivity extends Activity {
         if(attendance == null) attendance = new Attendance();
         attendance.getNotice();
         ((EditText)findViewById(R.id.ip)).setText(serverIP);
-        findViewById(R.id.first).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.b_auth_test).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ((TextView)findViewById(R.id.first_text)).setText("nonce:" + String.valueOf(Attendance.nonce));
-                sendFirst();
-            }
-        });
-        findViewById(R.id.second).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ((TextView)findViewById(R.id.second_text)).setText("hash:" + String.valueOf(firstResult.hash));
-                sendSecond();
+                doAuth();
             }
         });
     }
@@ -66,11 +58,21 @@ public class AuthenticationActivity extends Activity {
         private Long lecture;
         private String hash;
 
-        public FirstResult(String hash, Long timeStamp, Long lecture){
-            this._hash = hash;
-            this.timeStamp = timeStamp;
-            this.lecture = lecture;
-            this.hash = generateHash();
+        public FirstResult(String result){
+            try {
+                ObjectMapper object = new ObjectMapper();
+                JsonNode root = object.readValue(result, JsonNode.class);
+                this._hash = root.get("hash").asText("");
+                this.timeStamp = root.get("timestamp").asLong(0);
+                this.lecture = root.get("lecture").asLong(0);
+                this.hash = generateHash().replace('+', '-').replace('/', '_');
+            } catch (JsonMappingException e) {
+                e.printStackTrace();
+            } catch (JsonParseException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         private String generateHash() {
             try {
@@ -87,39 +89,6 @@ public class AuthenticationActivity extends Activity {
             }
             return "";
         }
-    }
-
-    public void sendFirst(){
-         new Async<String>(new AsyncCallback<String>() {
-            @Override
-            public String doFunc(Object... params) {
-                Map<String, Object> map = new HashMap<String, Object>();
-                map.put("nonce", Attendance.nonce);
-                return ConnectRun.send(method.GET, Protocol.HTTP, createBaseUri("auth/first"), map);
-            }
-
-            @Override
-            public void onResult(String result) {
-                if (result == null) return;
-                try {
-                    ObjectMapper object = new ObjectMapper();
-                    JsonNode root = object.readValue(result, JsonNode.class);
-                    firstResult = new FirstResult(
-                            root.get("hash").asText(""),
-                            root.get("timestamp").asLong(0),
-                            root.get("lecture").asLong(0)
-                    );
-                } catch (JsonMappingException e) {
-                    e.printStackTrace();
-                } catch (JsonParseException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                JsonValidator validator = new JsonValidator();
-                ((TextView) findViewById(R.id.first_receive)).setText(validator.setText(result).validate());
-            }
-        }).run();
     }
 
     public String createBaseUri(String endPoint){
@@ -140,20 +109,49 @@ public class AuthenticationActivity extends Activity {
         return base + "/" + endPoint;
     }
 
-    public void sendSecond(){
+    public void doAuth(){
         new Async<String>(new AsyncCallback<String>() {
             @Override
             public String doFunc(Object... params) {
                 Map<String, Object> map = new HashMap<String, Object>();
-                map.put("hash", firstResult.hash);
-                return ConnectRun.send(method.GET, Protocol.HTTP, createBaseUri("auth/second"), map);
+                map.put("nonce", Attendance.nonce);
+                return ConnectRun.send(method.POST, Protocol.HTTP, createBaseUri("auth"), map);
             }
 
             @Override
             public void onResult(String result) {
-                JsonValidator validator = new JsonValidator();
-                ((TextView) findViewById(R.id.second_receive)).setText(validator.setText(result).validate());
+                if (result == null) return;
+                firstResult = new FirstResult(result);
+                new Async<String>(new AsyncCallback<String>() {
+                    @Override
+                    public String doFunc(Object... params) {
+                        Map<String, Object> map = new HashMap<String, Object>();
+                        map.put("hash", firstResult.hash);
+                        return ConnectRun.send(method.POST, Protocol.HTTP, createBaseUri("auth"), map);
+                    }
+                    @Override
+                    public void onResult(String result) {
+                        ((TextView)findViewById(R.id.resp_data)).setText(String.valueOf(
+                                parseJson(result)?"認証成功":"認証失敗\n" + new JsonValidator().setText(result).validate()
+                        ));
+                    }
+                }).run();
             }
         }).run();
+    }
+
+    public boolean parseJson(String json){
+        try {
+            ObjectMapper object = new ObjectMapper();
+            JsonNode root = object.readValue(json, JsonNode.class);
+            return root.get("auth").asBoolean(false);
+        } catch (JsonMappingException e) {
+            e.printStackTrace();
+        } catch (JsonParseException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }
